@@ -19,36 +19,42 @@ def logout():
         st.session_state["authenticated"] = False
     if "username" in st.session_state:
         st.session_state["username"] = ""
-    st.sidebar.success("Logged out successfully!")
-    st.experimental_rerun()
+    if "user_id" in st.session_state:
+        st.session_state["user_id"] = None
+    st.session_state["menu"] = "Home"  # Redirect to Home after logout
+    st.success("Logged out successfully!")
 
 # Initialize Session State
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "username" not in st.session_state:
     st.session_state["username"] = ""
+if "user_id" not in st.session_state:
+    st.session_state["user_id"] = None
 if "menu" not in st.session_state:
     st.session_state["menu"] = "Home"
-if "redirect_to" not in st.session_state:
-    st.session_state["redirect_to"] = None
 
-# Handle redirection
-if st.session_state["redirect_to"]:
-    st.session_state["menu"] = st.session_state["redirect_to"]
-    st.session_state["redirect_to"] = None
-
-# Sidebar Navigation with Buttons (Add unique keys for each button)
+# Sidebar Navigation
 st.sidebar.title("Navigation")
-if st.sidebar.button("Home", key="btn_home"):
-    st.session_state["menu"] = "Home"
-if st.sidebar.button("Login", key="btn_login"):
-    st.session_state["menu"] = "Login"
-if st.sidebar.button("Signup", key="btn_signup"):
-    st.session_state["menu"] = "Signup"
-if st.sidebar.button("Dashboard", key="btn_dashboard"):
-    st.session_state["menu"] = "Dashboard"
-if st.sidebar.button("Predictions", key="btn_predictions"):
-    st.session_state["menu"] = "Predictions"
+if not st.session_state["authenticated"]:
+    # Display login/signup options for unauthenticated users
+    with st.sidebar:
+        if st.button("Home", key="btn_home"):
+            st.session_state["menu"] = "Home"
+        if st.button("Login", key="btn_login"):
+            st.session_state["menu"] = "Login"
+        if st.button("Signup", key="btn_signup"):
+            st.session_state["menu"] = "Signup"
+else:
+    # Display dashboard and logout for authenticated users
+    st.sidebar.success(f"Welcome, {st.session_state['username']}!")
+    with st.sidebar:
+        if st.button("Dashboard", key="btn_dashboard"):
+            st.session_state["menu"] = "Dashboard"
+        if st.button("Predictions", key="btn_predictions"):
+            st.session_state["menu"] = "Predictions"
+        if st.button("Logout", key="btn_logout"):
+            logout()
 
 # Page Routing
 if st.session_state["menu"] == "Home":
@@ -56,7 +62,14 @@ if st.session_state["menu"] == "Home":
 
 elif st.session_state["menu"] == "Login":
     if not st.session_state["authenticated"]:
-        render_login()
+        # Render the login page and handle login logic
+        username, user_id, authenticated = render_login()
+        if authenticated:
+            st.session_state["authenticated"] = True
+            st.session_state["username"] = username
+            st.session_state["user_id"] = user_id
+            st.session_state["menu"] = "Predictions"  # Redirect to Predictions after login
+            st.success("Login successful! Redirecting...")
     else:
         st.sidebar.success(f"Logged in as {st.session_state['username']}")
         if st.sidebar.button("Logout", key="btn_logout"):
@@ -69,15 +82,13 @@ elif st.session_state["menu"] == "Dashboard":
     if st.session_state["authenticated"]:
         render_dashboard()
     else:
-        st.warning("Please log in to access the dashboard.")
-        st.session_state["redirect_to"] = "Dashboard"
+        st.warning("You need to log in to view your dashboard.")
 
 elif st.session_state["menu"] == "Predictions":
     if st.session_state["authenticated"]:
         render_predictions()
     else:
-        st.warning("Please log in to make predictions.")
-        st.session_state["redirect_to"] = "Predictions"
+        st.warning("You need to log in to make predictions.")
 
 # Footer
 st.sidebar.markdown("---")

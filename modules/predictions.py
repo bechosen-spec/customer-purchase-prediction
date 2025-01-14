@@ -2,6 +2,7 @@ import streamlit as st
 from utils.predict import make_prediction
 from utils.database import add_prediction
 
+
 def render_predictions():
     """
     Renders the Predictions page for the Streamlit app.
